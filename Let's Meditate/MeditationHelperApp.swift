@@ -7,6 +7,8 @@
 
 import SwiftUI
 import AVFoundation
+import SwiftUI
+import AVFoundation
 
 struct MeditationHelperApp: View {
     @State private var elapsedTime: TimeInterval = 0
@@ -14,78 +16,93 @@ struct MeditationHelperApp: View {
     @State private var timerActive = false
     @State private var timer: Timer? = nil
     @State private var resetButtonDisabled = true
+    @State private var selectedVoice: AVSpeechSynthesisVoice? = AVSpeechSynthesisVoice(language: "en-US")
 
     let synthesizer = AVSpeechSynthesizer()
 
     var body: some View {
-        VStack(spacing: 20) {
-            // Stopwatch TextBox
-            Text(formatTime(elapsedTime))
-                .font(.largeTitle)
-                .padding()
-
-            // Interval Selector
-            VStack {
-                Text("Select Interval")
-                    .font(.headline)
-                HStack(spacing: 10) {
-                    // Hours Picker
-                    Picker("Hours", selection: Binding(
-                        get: { Int(interval / 3600) },
-                        set: { interval = TimeInterval($0 * 3600 + minutesComponent() * 60 + secondsComponent()) }
-                    )) {
-                        ForEach(0..<24) { hour in
-                            Text("\(hour) h").tag(hour)
-                        }
-                    }
-                    .labelsHidden()
-                    .pickerStyle(.menu)
-
-                    // Minutes Picker
-                    Picker("Minutes", selection: Binding(
-                        get: { minutesComponent() },
-                        set: { interval = TimeInterval(Int(interval / 3600) * 3600 + $0 * 60 + secondsComponent()) }
-                    )) {
-                        ForEach(0..<60) { minute in
-                            Text("\(minute) m").tag(minute)
-                        }
-                    }
-                    .labelsHidden()
-                    .pickerStyle(.menu)
-
-                    // Seconds Picker
-                    Picker("Seconds", selection: Binding(
-                        get: { secondsComponent() },
-                        set: { interval = TimeInterval(Int(interval / 3600) * 3600 + minutesComponent() * 60 + $0) }
-                    )) {
-                        ForEach(0..<60) { second in
-                            Text("\(second) s").tag(second)
-                        }
-                    }
-                    .labelsHidden()
-                    .pickerStyle(.menu)
-                }
-            }
-
-            // Buttons
-            HStack(spacing: 20) {
-                Button(timerActive ? "Pause" : "Start") {
-                    if timerActive {
-                        pauseTimer()
-                    } else {
-                        startTimer()
-                    }
-                }
-                .buttonStyle(.borderedProminent)
-
-                Button("Reset") {
-                    resetTimer()
-                }
-                .buttonStyle(.bordered)
-                .disabled(resetButtonDisabled)
-            }
+        VStack(spacing: 10) {
+            stopwatchView
+            intervalSelectorView
+            actionButtons
+            voicePickerView
         }
         .padding()
+//        .frame(width: 300)
+        .onAppear {
+            setupFloatingWindow()
+        }
+    }
+
+    // Subviews for better readability and compiler performance
+
+    var stopwatchView: some View {
+        Text(formatTime(elapsedTime))
+            .font(.system(size: 50))
+            .padding()
+    }
+
+    var intervalSelectorView: some View {
+        VStack(spacing: 5) {
+            Text("Select Interval")
+                .font(.system(size: 14))
+            HStack(spacing: 5) {
+                intervalPicker(label: "Hours", value: Binding(
+                    get: { Int(interval / 3600) },
+                    set: { interval = TimeInterval($0 * 3600 + minutesComponent() * 60 + secondsComponent()) }
+                ))
+                intervalPicker(label: "Minutes", value: Binding(
+                    get: { minutesComponent() },
+                    set: { interval = TimeInterval(Int(interval / 3600) * 3600 + $0 * 60 + secondsComponent()) }
+                ))
+                intervalPicker(label: "Seconds", value: Binding(
+                    get: { secondsComponent() },
+                    set: { interval = TimeInterval(Int(interval / 3600) * 3600 + minutesComponent() * 60 + $0) }
+                ))
+            }
+        }
+    }
+
+    func intervalPicker(label: String, value: Binding<Int>) -> some View {
+        Picker(label, selection: value) {
+            ForEach(0..<60) { item in
+                Text("\(item)").tag(item)
+            }
+        }
+        .frame(width: 60)
+        .clipped()
+    }
+
+    var actionButtons: some View {
+        HStack(spacing: 10) {
+            Button(timerActive ? "Pause" : "Start") {
+                if timerActive {
+                    pauseTimer()
+                } else {
+                    startTimer()
+                }
+            }
+            .buttonStyle(.borderedProminent)
+
+            Button("Reset") {
+                resetTimer()
+            }
+            .buttonStyle(.bordered)
+            .disabled(resetButtonDisabled)
+        }
+    }
+
+    var voicePickerView: some View {
+        Picker("Voice", selection: Binding(
+            get: { selectedVoice },
+            set: { selectedVoice = $0 }
+        )) {
+            ForEach(AVSpeechSynthesisVoice.speechVoices(), id: \.identifier) { voice in
+                Text(voice.name).tag(voice as AVSpeechSynthesisVoice?)
+            }
+        }
+        .pickerStyle(.menu)
+        .frame(width: 200)
     }
 
     // Helper functions
@@ -114,12 +131,12 @@ struct MeditationHelperApp: View {
     }
 
     func speakElapsedTime() {
-        let elapsedString = formatTime(elapsedTime)
-        let systemTime = DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .short)
-        let speech = "Time elapsed: \(elapsedString). Current time: \(systemTime)."
+        let elapsedString = formatElapsedTime(elapsedTime)
+        let systemTime = DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .medium)
+        let speech = "Time elapsed. \(elapsedString). Current time. \(systemTime)"
 
         let utterance = AVSpeechUtterance(string: speech)
-        utterance.voice = AVSpeechSynthesisVoice(language: "en-US")
+        utterance.voice = selectedVoice ?? AVSpeechSynthesisVoice(language: "en-US")
         synthesizer.speak(utterance)
     }
 
@@ -130,6 +147,18 @@ struct MeditationHelperApp: View {
         return String(format: "%02d:%02d:%02d", hours, minutes, seconds)
     }
 
+    func formatElapsedTime(_ time: TimeInterval) -> String {
+        let hours = Int(time) / 3600
+        let minutes = (Int(time) % 3600) / 60
+        let seconds = Int(time) % 60
+
+        var components: [String] = []
+        if hours > 0 { components.append("\(hours) hours") }
+        if minutes > 0 { components.append("\(minutes) minutes") }
+        if seconds > 0 { components.append("\(seconds) seconds") }
+        return components.joined(separator: ", ")
+    }
+
     func minutesComponent() -> Int {
         return (Int(interval) % 3600) / 60
     }
@@ -137,13 +166,15 @@ struct MeditationHelperApp: View {
     func secondsComponent() -> Int {
         return Int(interval) % 60
     }
-}
 
-//struct MeditationHelperApp_Previews: PreviewProvider {
-//    static var previews: some View {
-//        MeditationHelperApp()
-//    }
-//}
+    func setupFloatingWindow() {
+        if let window = NSApplication.shared.windows.first {
+            window.level = .floating
+            window.isMovableByWindowBackground = true
+            window.setFrame(NSRect(x: 100, y: 100, width: 300, height: 300), display: true)
+        }
+    }
+}
 
 #Preview {
     MeditationHelperApp()
