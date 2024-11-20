@@ -9,72 +9,109 @@ import SwiftUI
 import AVFoundation
 import SwiftUI
 import AVFoundation
+import SwiftUI
+import AVFoundation
 
 struct MeditationHelperApp: View {
     @State private var elapsedTime: TimeInterval = 0
-    @State private var interval: TimeInterval = 10 // Default interval (in seconds)
+    @State private var hours: Int = UserDefaults.standard.integer(forKey: "intervalHours")
+    @State private var minutes: Int = UserDefaults.standard.integer(forKey: "intervalMinutes")
+    @State private var seconds: Int = UserDefaults.standard.integer(forKey: "intervalSeconds")
     @State private var timerActive = false
     @State private var timer: Timer? = nil
     @State private var resetButtonDisabled = true
-    @State private var selectedVoice: AVSpeechSynthesisVoice? = AVSpeechSynthesisVoice(language: "en-US")
+//    @State private var timerActive: Bool = false
+    @FocusState private var focusedField: FocusField?
+
+    enum FocusField {
+        case hours, minutes, seconds
+    }
+
 
     let synthesizer = AVSpeechSynthesizer()
+    let aronVoice = AVSpeechSynthesisVoice(identifier: "com.apple.ttsbundle.siri_male_en-US_compact")
 
     var body: some View {
         VStack(spacing: 10) {
-            stopwatchView
+            // Stopwatch
+            Text(formatTime(elapsedTime))
+                .font(.system(size: 50))
+                .padding()
+
+            // Interval Selector
             intervalSelectorView
+
+            // Buttons
             actionButtons
-            voicePickerView
         }
-        .padding()
-//        .frame(width: 300)
+        .padding(.top, 10)
+        .padding(.bottom, 40)
+        .frame(width: 300)
         .onAppear {
             setupFloatingWindow()
+            loadSavedInterval()
         }
-    }
-
-    // Subviews for better readability and compiler performance
-
-    var stopwatchView: some View {
-        Text(formatTime(elapsedTime))
-            .font(.system(size: 50))
-            .padding()
     }
 
     var intervalSelectorView: some View {
-        VStack(spacing: 5) {
-            Text("Select Interval")
-                .font(.system(size: 14))
-            HStack(spacing: 5) {
-                intervalPicker(label: "Hours", value: Binding(
-                    get: { Int(interval / 3600) },
-                    set: { interval = TimeInterval($0 * 3600 + minutesComponent() * 60 + secondsComponent()) }
-                ))
-                intervalPicker(label: "Minutes", value: Binding(
-                    get: { minutesComponent() },
-                    set: { interval = TimeInterval(Int(interval / 3600) * 3600 + $0 * 60 + secondsComponent()) }
-                ))
-                intervalPicker(label: "Seconds", value: Binding(
-                    get: { secondsComponent() },
-                    set: { interval = TimeInterval(Int(interval / 3600) * 3600 + minutesComponent() * 60 + $0) }
-                ))
+//        VStack(spacing: 10) {
+//            Text("Select Interval")
+//                .font(.system(size: 14))
+            HStack(spacing: 7) {
+                timeSelectionControl(label: "Hours", value: $hours, range: 0...Int.max, field: .hours)
+                timeSelectionControl(label: "Minutes", value: $minutes, range: 0...59, field: .minutes)
+                timeSelectionControl(label: "Seconds", value: $seconds, range: 0...59, field: .seconds)
             }
-        }
+            .onAppear {
+                 focusedField = .minutes
+             }
+//        }
     }
 
-    func intervalPicker(label: String, value: Binding<Int>) -> some View {
-        Picker(label, selection: value) {
-            ForEach(0..<60) { item in
-                Text("\(item)").tag(item)
+    func timeSelectionControl(label: String, value: Binding<Int>, range: ClosedRange<Int>, field: FocusField) -> some View {
+        VStack {
+            Text(label).font(.system(size: 12))
+            HStack(spacing: 5) {
+//                Stepper("", value: value, in: range)
+//                    .labelsHidden()
+                TextField("0", value: value, formatter: NumberFormatter(), onCommit: {
+                    validateTimeValue(binding: value, range: range)
+                    startTimer()
+                })
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+                .frame(width: 50)
+                .multilineTextAlignment(.center)
+                .focused($focusedField, equals: field)
             }
         }
-        .frame(width: 60)
-        .clipped()
+        .frame(width: 100)
+    }
+
+    // Validate time values to ensure they're within 0-59 range for minutes/seconds
+    func validateTimeValue(binding: Binding<Int>, range: ClosedRange<Int>) {
+        if binding.wrappedValue < range.lowerBound {
+            binding.wrappedValue = range.lowerBound
+        } else if binding.wrappedValue > range.upperBound {
+            binding.wrappedValue = range.upperBound
+        }
+    }
+//
+
+
+    func stepperView(label: String, value: Binding<Int>) -> some View {
+        VStack {
+            Text(label).font(.system(size: 12))
+            Stepper(value: value, in: 0...59, step: 1) {
+                Text("\(value.wrappedValue)")
+                    .frame(width: 40, alignment: .center)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+            }
+        }
+        .frame(width: 80)
     }
 
     var actionButtons: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 20) {
             Button(timerActive ? "Pause" : "Start") {
                 if timerActive {
                     pauseTimer()
@@ -90,29 +127,18 @@ struct MeditationHelperApp: View {
             .buttonStyle(.bordered)
             .disabled(resetButtonDisabled)
         }
+        .padding(.top, 30)
     }
 
-    var voicePickerView: some View {
-        Picker("Voice", selection: Binding(
-            get: { selectedVoice },
-            set: { selectedVoice = $0 }
-        )) {
-            ForEach(AVSpeechSynthesisVoice.speechVoices(), id: \.identifier) { voice in
-                Text(voice.name).tag(voice as AVSpeechSynthesisVoice?)
-            }
-        }
-        .pickerStyle(.menu)
-        .frame(width: 200)
-    }
-
-    // Helper functions
+    // Timer Logic
     func startTimer() {
         timerActive = true
         resetButtonDisabled = true
+        saveInterval()
 
         timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
             elapsedTime += 1
-            if elapsedTime.truncatingRemainder(dividingBy: interval) == 0 {
+            if Int(elapsedTime) % calculateIntervalInSeconds() == 0 {
                 speakElapsedTime()
             }
         }
@@ -130,16 +156,23 @@ struct MeditationHelperApp: View {
         resetButtonDisabled = true
     }
 
+    func calculateIntervalInSeconds() -> Int {
+        return hours * 3600 + minutes * 60 + seconds
+    }
+
+    // Speech Logic
     func speakElapsedTime() {
         let elapsedString = formatElapsedTime(elapsedTime)
         let systemTime = DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .medium)
-        let speech = "Time elapsed. \(elapsedString). Current time. \(systemTime)"
+        let speech = "Time elapsed: \(elapsedString). Current time: \(systemTime)."
 
         let utterance = AVSpeechUtterance(string: speech)
-        utterance.voice = selectedVoice ?? AVSpeechSynthesisVoice(language: "en-US")
+        utterance.voice = aronVoice
+        utterance.rate = 0.5
         synthesizer.speak(utterance)
     }
 
+    // Time Formatting
     func formatTime(_ time: TimeInterval) -> String {
         let hours = Int(time) / 3600
         let minutes = (Int(time) % 3600) / 60
@@ -159,14 +192,20 @@ struct MeditationHelperApp: View {
         return components.joined(separator: ", ")
     }
 
-    func minutesComponent() -> Int {
-        return (Int(interval) % 3600) / 60
+    // Save and Load Interval
+    func saveInterval() {
+        UserDefaults.standard.set(hours, forKey: "intervalHours")
+        UserDefaults.standard.set(minutes, forKey: "intervalMinutes")
+        UserDefaults.standard.set(seconds, forKey: "intervalSeconds")
     }
 
-    func secondsComponent() -> Int {
-        return Int(interval) % 60
+    func loadSavedInterval() {
+        hours = UserDefaults.standard.integer(forKey: "intervalHours")
+        minutes = UserDefaults.standard.integer(forKey: "intervalMinutes")
+        seconds = UserDefaults.standard.integer(forKey: "intervalSeconds")
     }
 
+    // Window Configuration
     func setupFloatingWindow() {
         if let window = NSApplication.shared.windows.first {
             window.level = .floating
