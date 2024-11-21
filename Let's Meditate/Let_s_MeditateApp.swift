@@ -9,9 +9,13 @@ import SwiftUI
 
 @main
 struct Let_s_MeditateApp: App {
+    @StateObject private var sharedData = SharedData()
+    
     var body: some Scene {
         WindowGroup {
             MeditationHelperApp()
+                .environmentObject(sharedData)
+                
         }
     }
 }
