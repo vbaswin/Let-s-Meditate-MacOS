@@ -9,6 +9,12 @@ import SwiftUI
 
 struct AllViews: View {
     @EnvironmentObject var sharedData: SharedData
+    @FocusState private var focusedField: FocusField?
+
+    enum FocusField {
+        case hours, minutes, seconds
+    }
+
     
     var body: some View {
         VStack(spacing: 10) {
@@ -16,7 +22,7 @@ struct AllViews: View {
             timer_view
 
             // Interval Selector
-//            intervalSelectorView
+            intervalSelectorView
 
             // Buttons
 //            actionButtons
@@ -33,69 +39,70 @@ struct AllViews: View {
     var timer_view: some View {
         HStack {
                         // Hours Box
-            TextField("00", value: $sharedData.hours, formatter: NumberFormatter())
+            TextField("00", value: $sharedData.elapsed_hours, formatter: NumberFormatter())
                             .frame(width: 50, height: 40)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
-                            .padding(5)
+                            .textFieldStyle(PlainTextFieldStyle())
+//                            .padding(5)
                             .multilineTextAlignment(.center)
+//                            .disabled(true)
                         
                         Text(":")
                         
                         // Minutes Box
-            TextField("00", value: $sharedData.minutes, formatter: NumberFormatter())
+            TextField("00", value: $sharedData.elapsed_minutes, formatter: NumberFormatter())
                             .frame(width: 50, height: 40)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
-                            .padding(5)
+                            .textFieldStyle(PlainTextFieldStyle())
+//                            .padding(5)
                             .multilineTextAlignment(.center)
                         
                         Text(":")
                         
                         // Seconds Box
-            TextField("00", value: $sharedData.seconds, formatter: NumberFormatter())
-                            .frame(width: 50, height: 40)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
-                            .padding(5)
+            TextField("00", value: $sharedData.elapsed_seconds, formatter: NumberFormatter())
+                            .frame(width: 50)
+                            .textFieldStyle(PlainTextFieldStyle())
+//                            .padding(5)
                             .multilineTextAlignment(.center)
                     }
                     .font(.title)
     }
 
-//    var intervalSelectorView: some View {
-//            HStack(spacing: 7) {
-//                timeSelectionControl(label: "Hours", value: $hours, range: 0...Int.max, field: .hours)
-//                timeSelectionControl(label: "Minutes", value: $minutes, range: 0...59, field: .minutes)
-//                timeSelectionControl(label: "Seconds", value: $seconds, range: 0...59, field: .seconds)
-//            }
-//            .onAppear {
-//                 focusedField = .minutes
-//             }
-//    }
+    var intervalSelectorView: some View {
+            HStack(spacing: 7) {
+                timeSelectionControl(label: "Hours", value: $sharedData.interval_hours, range: 0...Int.max, field: .hours)
+                timeSelectionControl(label: "Minutes", value: $sharedData.interval_minutes, range: 0...59, field: .minutes)
+                timeSelectionControl(label: "Seconds", value: $sharedData.interval_seconds, range: 0...59, field: .seconds)
+            }
+            .onAppear {
+                 focusedField = .minutes
+             }
+    }
 
-//    func timeSelectionControl(label: String, value: Binding<Int>, range: ClosedRange<Int>, field: FocusField) -> some View {
-//        VStack {
-//            Text(label).font(.system(size: 12))
-//            HStack(spacing: 3) {
-//                TextField("0", value: value, formatter: NumberFormatter(), onCommit: {
-//                    validateTimeValue(binding: value, range: range)
-//                })
-//                .textFieldStyle(RoundedBorderTextFieldStyle())
-//                .frame(width: 50)
-//                .multilineTextAlignment(.center)
-//                .focused($focusedField, equals: field)
-//            }
-//        }
-//        .frame(width: 80)
-//    }
+    func timeSelectionControl(label: String, value: Binding<Int>, range: ClosedRange<Int>, field: FocusField) -> some View {
+        VStack {
+            Text(label).font(.system(size: 12))
+            HStack(spacing: 3) {
+                TextField("0", value: value, formatter: NumberFormatter(), onCommit: {
+                    validateTimeValue(binding: value, range: range)
+                })
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+                .frame(width: 50)
+                .multilineTextAlignment(.center)
+                .focused($focusedField, equals: field)
+            }
+        }
+        .frame(width: 80)
+    }
 
-    // Validate time values to ensure they're within 0-59 range for minutes/seconds
-//    func validateTimeValue(binding: Binding<Int>, range: ClosedRange<Int>) {
-//        if binding.wrappedValue < range.lowerBound {
-//            binding.wrappedValue = range.lowerBound
-//        } else if binding.wrappedValue > range.upperBound {
-//            binding.wrappedValue = range.upperBound
-//        }
-//    }
-////
+//     Validate time values to ensure they're within 0-59 range for minutes/seconds
+    func validateTimeValue(binding: Binding<Int>, range: ClosedRange<Int>) {
+        if binding.wrappedValue < range.lowerBound {
+            binding.wrappedValue = range.lowerBound
+        } else if binding.wrappedValue > range.upperBound {
+            binding.wrappedValue = range.upperBound
+        }
+    }
+//
 //
 //    var actionButtons: some View {
 //        HStack(spacing: 20) {

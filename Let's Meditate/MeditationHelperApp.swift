@@ -12,24 +12,12 @@ import AVFoundation
 import SwiftUI
 import AVFoundation
 
-struct MeditationHelperApp: View {
-    private var elapsedTime: TimeInterval = 0
-    private var hours_elapsed: TimeInterval = 0
-    private var minutes_elapsed: TimeInterval = 0
-    private var seconds_elapsed: TimeInterval = 0
+struct MeditationHelperApp : View {
 
     @EnvironmentObject var sharedData: SharedData
     
-    @State private var timerActive = false
-    @State private var resetButtonDisabled = false
     
     @State private var timer: Timer? = nil
-//    @State private var timerActive: Bool = false
-    @FocusState private var focusedField: FocusField?
-
-    enum FocusField {
-        case hours, minutes, seconds
-    }
 
 
     let synthesizer = AVSpeechSynthesizer()
@@ -37,21 +25,30 @@ struct MeditationHelperApp: View {
 
     var body: some View {
         AllViews()
+//            .onAppear {
+//                startTimer()
+//            }
+    }
+    
+    func startTimer() {
+
+        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+            if (sharedData.elapsed_seconds + 1 == 60) {
+                if (sharedData.elapsed_minutes + 1 == 60) {
+                    sharedData.elapsed_hours += 1;
+                    sharedData.elapsed_minutes = 0
+                } else {
+                    sharedData.elapsed_minutes += 1;
+                }
+                sharedData.elapsed_seconds = 0
+            } else{
+                sharedData.elapsed_seconds += 1;
+            }
+        }
     }
 
-    // Timer Logic
-//    func startTimer() {
-//        timerActive = true
-//        resetButtonDisabled = true
-//        saveInterval()
-//
-//        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
-////            elapsedTime += 1
-//            if Int(elapsedTime) % calculateIntervalInSeconds() == 0 {
-//                speakElapsedTime()
-//            }
-//        }
-//    }
+
+
 //    func toggleTimer() {
 //          if timerActive {
 //              // Pause the timer
@@ -110,7 +107,7 @@ struct MeditationHelperApp: View {
 //        if seconds > 0 { components.append("\(seconds) seconds") }
 //        return components.joined(separator: ", ")
 //    }
-
+    
     // Save and Load Interval
 //    func saveInterval() {
 //        UserDefaults.standard.set(hours, forKey: "intervalHours")

@@ -9,7 +9,11 @@ import SwiftUI
 import Combine
 
 class SharedData: ObservableObject {
-    @State var hours: Int = UserDefaults.standard.integer(forKey: "intervalHours")
-    @State var minutes: Int = UserDefaults.standard.integer(forKey: "intervalMinutes")
-    @State var seconds: Int = UserDefaults.standard.integer(forKey: "intervalSeconds")
+    @Published var elapsed_hours: Int = UserDefaults.standard.integer(forKey: "intervalHours")
+    @Published var elapsed_minutes: Int = UserDefaults.standard.integer(forKey: "intervalMinutes")
+    @Published var elapsed_seconds: Int = UserDefaults.standard.integer(forKey: "intervalSeconds")
+    
+    @AppStorage("intervalHours") var interval_hours: Int = 0
+    @AppStorage("intervalMinutes") var interval_minutes: Int = 0
+    @AppStorage("intervalSeconds") var interval_seconds: Int = 0
 }
