@@ -16,4 +16,6 @@ class SharedData: ObservableObject {
     @AppStorage("intervalHours") var interval_hours: Int = 0
     @AppStorage("intervalMinutes") var interval_minutes: Int = 0
     @AppStorage("intervalSeconds") var interval_seconds: Int = 0
+    
+    public var timer_active: Bool = false
 }

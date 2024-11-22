@@ -7,14 +7,11 @@
 
 import SwiftUI
 import AVFoundation
-import SwiftUI
-import AVFoundation
-import SwiftUI
-import AVFoundation
 
-struct MeditationHelperApp : View {
 
-    @EnvironmentObject var sharedData: SharedData
+struct MeditationHelperApp {
+
+    var sharedData: SharedData
     
     
     @State private var timer: Timer? = nil
@@ -22,12 +19,9 @@ struct MeditationHelperApp : View {
 
     let synthesizer = AVSpeechSynthesizer()
     let aronVoice = AVSpeechSynthesisVoice(identifier: "com.apple.ttsbundle.siri_male_en-US_compact")
-
-    var body: some View {
-        AllViews()
-//            .onAppear {
-//                startTimer()
-//            }
+    
+    init (_sharedData: SharedData) {
+        sharedData = _sharedData
     }
     
     func startTimer() {
@@ -117,6 +111,6 @@ struct MeditationHelperApp : View {
 
 }
 
-#Preview {
-    MeditationHelperApp()
-}
+//#Preview {
+//    MeditationHelperApp()
+//}

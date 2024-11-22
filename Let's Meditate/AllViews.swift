@@ -6,10 +6,13 @@
 //
 
 import SwiftUI
+import AVFoundation
 
 struct AllViews: View {
     @EnvironmentObject var sharedData: SharedData
     @FocusState private var focusedField: FocusField?
+    
+    var med_helper: MeditationHelperApp
 
     enum FocusField {
         case hours, minutes, seconds
@@ -18,14 +21,9 @@ struct AllViews: View {
     
     var body: some View {
         VStack(spacing: 10) {
-            // timer view
             timer_view
-
-            // Interval Selector
             intervalSelectorView
-
-            // Buttons
-//            actionButtons
+            actionButtons
         }
         .padding(.top, 10)
         .padding(.bottom, 40)
@@ -104,24 +102,24 @@ struct AllViews: View {
     }
 //
 //
-//    var actionButtons: some View {
-//        HStack(spacing: 20) {
-//            Button(action: toggleTimer) {
-//                                Text(timerActive ? "Pause" : "Start")
-//                                    .foregroundColor(.white)
-//                            }
-//            .buttonStyle(.borderedProminent)
-//            .accentColor(timerActive ? Color.orange : Color.green)
-//
-//            Button(action: resetTimer) {
-//                 Text("Reset")
-//                     .foregroundColor(.white)
-//             }
-//             .disabled(!timerActive)
-//            .buttonStyle(.bordered)
-//        }
-//        .padding(.top, 30)
-//    }
+    var actionButtons: some View {
+        HStack(spacing: 20) {
+            Button(action: toggleTimer) {
+                Text(sharedData.timer_active ? "Pause" : "Start")
+                                    .foregroundColor(.white)
+                            }
+            .buttonStyle(.borderedProminent)
+            .accentColor(sharedData.timer_active ? Color.orange : Color.green)
+
+            Button(action: resetTimer) {
+                 Text("Reset")
+                     .foregroundColor(.white)
+             }
+            .disabled(!sharedData.timer_active)
+            .buttonStyle(.bordered)
+        }
+        .padding(.top, 30)
+    }
 //    
     func setupFloatingWindow() {
         if let window = NSApplication.shared.windows.first {
@@ -130,6 +128,21 @@ struct AllViews: View {
             window.setFrame(NSRect(x: 100, y: 100, width: 300, height: 300), display: true)
         }
     }
+    
+        func toggleTimer() {
+            if sharedData.timer_active {
+                  // Pause the timer
+                sharedData.timer_active = false
+              } else {
+                  // Start the timer
+                  sharedData.timer_active = true
+                  med_helper.startTimer()
+              }
+          }
+        func resetTimer() {
+    //        elapsedTime = 0
+//            resetButtonDisabled = true
+        }
     
 //    func loadSavedInterval() {
 //        hours = UserDefaults.standard.integer(forKey: "intervalHours")

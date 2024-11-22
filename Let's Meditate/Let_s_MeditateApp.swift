@@ -13,7 +13,7 @@ struct Let_s_MeditateApp: App {
     
     var body: some Scene {
         WindowGroup {
-            MeditationHelperApp()
+            AllViews(med_helper: MeditationHelperApp(_sharedData: sharedData))
                 .environmentObject(sharedData)
                 
         }
