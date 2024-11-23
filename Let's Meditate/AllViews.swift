@@ -104,14 +104,14 @@ struct AllViews: View {
 //
     var actionButtons: some View {
         HStack(spacing: 20) {
-            Button(action: toggleTimer) {
+            Button(action: med_helper.toggleTimer) {
                 Text(sharedData.timer_active ? "Pause" : "Start")
                                     .foregroundColor(.white)
                             }
             .buttonStyle(.borderedProminent)
             .accentColor(sharedData.timer_active ? Color.orange : Color.green)
 
-            Button(action: resetTimer) {
+            Button(action: med_helper.resetTimer) {
                  Text("Reset")
                      .foregroundColor(.white)
              }
@@ -129,20 +129,12 @@ struct AllViews: View {
         }
     }
     
-        func toggleTimer() {
-            if sharedData.timer_active {
-                  // Pause the timer
-                sharedData.timer_active = false
-              } else {
-                  // Start the timer
-                  sharedData.timer_active = true
-                  med_helper.startTimer()
-              }
-          }
-        func resetTimer() {
+
+//        func resetTimer() {
+//            stop
     //        elapsedTime = 0
 //            resetButtonDisabled = true
-        }
+//        }
     
 //    func loadSavedInterval() {
 //        hours = UserDefaults.standard.integer(forKey: "intervalHours")

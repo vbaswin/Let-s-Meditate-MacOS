@@ -14,19 +14,37 @@ struct MeditationHelperApp {
     var sharedData: SharedData
     
     
-    @State private var timer: Timer? = nil
-
-
-    let synthesizer = AVSpeechSynthesizer()
-    let aronVoice = AVSpeechSynthesisVoice(identifier: "com.apple.ttsbundle.siri_male_en-US_compact")
+//    let synthesizer = AVSpeechSynthesizer()
+//    let aronVoice = AVSpeechSynthesisVoice(identifier: "com.apple.ttsbundle.siri_male_en-US_compact")
     
     init (_sharedData: SharedData) {
         sharedData = _sharedData
     }
     
+    func toggleTimer() {
+        if sharedData.timer_active {
+              // Pause the timer
+            sharedData.timer_active = false
+            pauseTimer()
+          } else {
+              // Start the timer
+              sharedData.timer_active = true
+              startTimer()
+          }
+      }
+    
     func startTimer() {
+        
+//        if timer != nil {
+//            print("Timer already running")
+//            return
+//        }
+        
+        print("starting new timer")
+        sharedData.timer_active = true
+        
 
-        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+        sharedData.timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
             if (sharedData.elapsed_seconds + 1 == 60) {
                 if (sharedData.elapsed_minutes + 1 == 60) {
                     sharedData.elapsed_hours += 1;
@@ -54,12 +72,24 @@ struct MeditationHelperApp {
 //          }
 //      }
 //
-//    func pauseTimer() {
-//        timer?.invalidate()
-//        timer = nil
-//        timerActive = false
+    func pauseTimer() {
+//        print("inside stop timer")
+//        if timer != nil {
+//            print("timer is not nil")
+//        }
+        sharedData.timer?.invalidate()
+        sharedData.timer = nil
+        sharedData.timer_active = false
 //        resetButtonDisabled = false
-//    }
+    }
+    
+    func resetTimer() {
+        pauseTimer() // Stop the timer
+        sharedData.elapsed_hours = 0
+        sharedData.elapsed_minutes = 0
+        sharedData.elapsed_seconds = 0
+    }
+    
 //
 //    func resetTimer() {
 ////        elapsedTime = 0
