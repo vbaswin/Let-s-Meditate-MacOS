@@ -52,8 +52,8 @@ struct MeditationHelperApp: View {
         .padding(.bottom, 40)
         .frame(width: 300)
         .onAppear {
-            setupFloatingWindow()
-            loadSavedInterval()
+                setupFloatingWindow()
+                loadSavedInterval()
         }
     }
     
@@ -68,6 +68,7 @@ struct MeditationHelperApp: View {
 //                            .disabled(true)
 
                         Text(":")
+                .padding(.bottom, 7)
 
                         // Minutes Box
             TextField("00", value: $elapsed_minutes, formatter: NumberFormatter())
@@ -77,6 +78,7 @@ struct MeditationHelperApp: View {
                             .multilineTextAlignment(.center)
 
                         Text(":")
+                .padding(.bottom, 7)
 
                         // Seconds Box
             TextField("00", value: $elapsed_seconds, formatter: NumberFormatter())
@@ -85,14 +87,16 @@ struct MeditationHelperApp: View {
 //                            .padding(5)
                             .multilineTextAlignment(.center)
                     }
-                    .font(.title)
+//                    .font(.title)
+                    .font(Font.system(size: 40, design: .default))
+                    .padding(.vertical, 30)
     }
 
     var intervalSelectorView: some View {
 //        VStack(spacing: 10) {
 //            Text("Select Interval")
 //                .font(.system(size: 14))
-            HStack(spacing: 7) {
+        HStack(spacing: 7) {
                 timeSelectionControl(label: "Hours", value: $interval_hours, range: 0...Int.max, field: .hours)
                 timeSelectionControl(label: "Minutes", value: $interval_minutes, range: 0...59, field: .minutes)
                 timeSelectionControl(label: "Seconds", value: $interval_seconds, range: 0...59, field: .seconds)
@@ -118,7 +122,7 @@ struct MeditationHelperApp: View {
                 .focused($focusedField, equals: field)
             }
         }
-        .frame(width: 100)
+        .frame(width: 80)
     }
 
     // Validate time values to ensure they're within 0-59 range for minutes/seconds
@@ -164,7 +168,7 @@ struct MeditationHelperApp: View {
 
             Button("Reset") {
                 resetTimer()
-                resetButtonDisabled = true
+                    resetButtonDisabled = true
             }
             .buttonStyle(.bordered)
             .disabled(resetButtonDisabled)
@@ -261,6 +265,7 @@ struct MeditationHelperApp: View {
             window.isMovableByWindowBackground = true
             window.setFrame(NSRect(x: 100, y: 100, width: 300, height: 300), display: true)
         }
+        
     }
 }
 
