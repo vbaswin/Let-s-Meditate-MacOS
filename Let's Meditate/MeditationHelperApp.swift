@@ -7,16 +7,17 @@
 
 import SwiftUI
 import AVFoundation
-import SwiftUI
-import AVFoundation
-import SwiftUI
-import AVFoundation
 
 struct MeditationHelperApp: View {
-    @State private var elapsedTime: TimeInterval = 0
-    @State private var hours: Int = UserDefaults.standard.integer(forKey: "intervalHours")
-    @State private var minutes: Int = UserDefaults.standard.integer(forKey: "intervalMinutes")
-    @State private var seconds: Int = UserDefaults.standard.integer(forKey: "intervalSeconds")
+    @State private var interval_hours: Int = UserDefaults.standard.integer(forKey: "intervalHours")
+    @State private var interval_minutes: Int = UserDefaults.standard.integer(forKey: "intervalMinutes")
+    @State private var interval_seconds: Int = UserDefaults.standard.integer(forKey: "intervalSeconds")
+    
+    @State private var elapsed_seconds: Int = 0
+    @State private var elapsed_minutes: Int = 0
+    @State private var elapsed_hours: Int = 0
+    
+
     @State private var timerActive = false
     @State private var timer: Timer? = nil
     @State private var resetButtonDisabled = true
@@ -33,15 +34,8 @@ struct MeditationHelperApp: View {
 
     var body: some View {
         VStack(spacing: 10) {
-            // Stopwatch
-            Text(formatTime(elapsedTime))
-                .font(.system(size: 50))
-                .padding()
-
-            // Interval Selector
+            timer_view
             intervalSelectorView
-
-            // Buttons
             actionButtons
         }
         .padding(.top, 10)
@@ -52,15 +46,46 @@ struct MeditationHelperApp: View {
             loadSavedInterval()
         }
     }
+    
+    var timer_view: some View {
+        HStack {
+                        // Hours Box
+            TextField("00", value: $elapsed_hours, formatter: NumberFormatter())
+                            .frame(width: 50, height: 40)
+                            .textFieldStyle(PlainTextFieldStyle())
+//                            .padding(5)
+                            .multilineTextAlignment(.center)
+//                            .disabled(true)
+
+                        Text(":")
+
+                        // Minutes Box
+            TextField("00", value: $elapsed_minutes, formatter: NumberFormatter())
+                            .frame(width: 50, height: 40)
+                            .textFieldStyle(PlainTextFieldStyle())
+//                            .padding(5)
+                            .multilineTextAlignment(.center)
+
+                        Text(":")
+
+                        // Seconds Box
+            TextField("00", value: $elapsed_seconds, formatter: NumberFormatter())
+                            .frame(width: 50)
+                            .textFieldStyle(PlainTextFieldStyle())
+//                            .padding(5)
+                            .multilineTextAlignment(.center)
+                    }
+                    .font(.title)
+    }
 
     var intervalSelectorView: some View {
 //        VStack(spacing: 10) {
 //            Text("Select Interval")
 //                .font(.system(size: 14))
             HStack(spacing: 7) {
-                timeSelectionControl(label: "Hours", value: $hours, range: 0...Int.max, field: .hours)
-                timeSelectionControl(label: "Minutes", value: $minutes, range: 0...59, field: .minutes)
-                timeSelectionControl(label: "Seconds", value: $seconds, range: 0...59, field: .seconds)
+                timeSelectionControl(label: "Hours", value: $interval_hours, range: 0...Int.max, field: .hours)
+                timeSelectionControl(label: "Minutes", value: $interval_minutes, range: 0...59, field: .minutes)
+                timeSelectionControl(label: "Seconds", value: $interval_seconds, range: 0...59, field: .seconds)
             }
             .onAppear {
                  focusedField = .minutes
@@ -76,7 +101,6 @@ struct MeditationHelperApp: View {
 //                    .labelsHidden()
                 TextField("0", value: value, formatter: NumberFormatter(), onCommit: {
                     validateTimeValue(binding: value, range: range)
-                    startTimer()
                 })
                 .textFieldStyle(RoundedBorderTextFieldStyle())
                 .frame(width: 50)
@@ -96,7 +120,6 @@ struct MeditationHelperApp: View {
         }
     }
 //
-
 
     func stepperView(label: String, value: Binding<Int>) -> some View {
         VStack {
@@ -137,9 +160,17 @@ struct MeditationHelperApp: View {
         saveInterval()
 
         timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
-            elapsedTime += 1
-            if Int(elapsedTime) % calculateIntervalInSeconds() == 0 {
-                speakElapsedTime()
+            if elapsed_seconds + 1 == 60 {
+                if elapsed_minutes + 1 == 60 {
+                    elapsed_hours += 1
+                    elapsed_minutes = 0
+                } else {
+                    elapsed_minutes += 1
+                }
+                elapsed_seconds = 0
+                    
+            } else {
+                elapsed_seconds += 1;
             }
         }
     }
@@ -152,19 +183,17 @@ struct MeditationHelperApp: View {
     }
 
     func resetTimer() {
-        elapsedTime = 0
+        elapsed_hours = 0
+        elapsed_minutes = 0
+        elapsed_seconds = 0
         resetButtonDisabled = true
     }
 
-    func calculateIntervalInSeconds() -> Int {
-        return hours * 3600 + minutes * 60 + seconds
-    }
 
     // Speech Logic
     func speakElapsedTime() {
-        let elapsedString = formatElapsedTime(elapsedTime)
         let systemTime = DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .medium)
-        let speech = "Time elapsed: \(elapsedString). Current time: \(systemTime)."
+        let speech = "Time elapsed: \(elapsed_hours):\(elapsed_minutes):\(elapsed_seconds). Current time: \(systemTime)."
 
         let utterance = AVSpeechUtterance(string: speech)
         utterance.voice = aronVoice
@@ -172,37 +201,20 @@ struct MeditationHelperApp: View {
         synthesizer.speak(utterance)
     }
 
-    // Time Formatting
-    func formatTime(_ time: TimeInterval) -> String {
-        let hours = Int(time) / 3600
-        let minutes = (Int(time) % 3600) / 60
-        let seconds = Int(time) % 60
-        return String(format: "%02d:%02d:%02d", hours, minutes, seconds)
-    }
 
-    func formatElapsedTime(_ time: TimeInterval) -> String {
-        let hours = Int(time) / 3600
-        let minutes = (Int(time) % 3600) / 60
-        let seconds = Int(time) % 60
 
-        var components: [String] = []
-        if hours > 0 { components.append("\(hours) hours") }
-        if minutes > 0 { components.append("\(minutes) minutes") }
-        if seconds > 0 { components.append("\(seconds) seconds") }
-        return components.joined(separator: ", ")
-    }
 
     // Save and Load Interval
     func saveInterval() {
-        UserDefaults.standard.set(hours, forKey: "intervalHours")
-        UserDefaults.standard.set(minutes, forKey: "intervalMinutes")
-        UserDefaults.standard.set(seconds, forKey: "intervalSeconds")
+        UserDefaults.standard.set(interval_hours, forKey: "intervalHours")
+        UserDefaults.standard.set(interval_minutes, forKey: "intervalMinutes")
+        UserDefaults.standard.set(interval_seconds, forKey: "intervalSeconds")
     }
 
     func loadSavedInterval() {
-        hours = UserDefaults.standard.integer(forKey: "intervalHours")
-        minutes = UserDefaults.standard.integer(forKey: "intervalMinutes")
-        seconds = UserDefaults.standard.integer(forKey: "intervalSeconds")
+        interval_hours = UserDefaults.standard.integer(forKey: "intervalHours")
+        interval_minutes = UserDefaults.standard.integer(forKey: "intervalMinutes")
+        interval_seconds = UserDefaults.standard.integer(forKey: "intervalSeconds")
     }
 
     // Window Configuration
