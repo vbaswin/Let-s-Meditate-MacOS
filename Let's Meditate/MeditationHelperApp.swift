@@ -160,9 +160,11 @@ struct MeditationHelperApp: View {
                 }
             }
             .buttonStyle(.borderedProminent)
+            .accentColor(timerActive ? Color.orange : Color.green)
 
             Button("Reset") {
                 resetTimer()
+                resetButtonDisabled = true
             }
             .buttonStyle(.bordered)
             .disabled(resetButtonDisabled)
