@@ -13,10 +13,18 @@ struct MeditationHelperApp: View {
     @State private var interval_minutes: Int = UserDefaults.standard.integer(forKey: "intervalMinutes")
     @State private var interval_seconds: Int = UserDefaults.standard.integer(forKey: "intervalSeconds")
     
+    
+    @State private var prev_interval_hours: Int = 0
+    @State private var prev_interval_minutes: Int = 0
+    @State private var prev_interval_seconds: Int = 0
+
     @State private var elapsed_seconds: Int = 0
     @State private var elapsed_minutes: Int = 0
     @State private var elapsed_hours: Int = 0
     
+    @State private var countdown_time: Int = 0
+    @State private var cur_countdown_time: Int = 0
+
 
     @State private var timerActive = false
     @State private var timer: Timer? = nil
@@ -31,6 +39,8 @@ struct MeditationHelperApp: View {
 
     let synthesizer = AVSpeechSynthesizer()
     let aronVoice = AVSpeechSynthesisVoice(identifier: "com.apple.ttsbundle.siri_male_en-US_compact")
+    
+
 
     var body: some View {
         VStack(spacing: 10) {
@@ -139,6 +149,13 @@ struct MeditationHelperApp: View {
                 if timerActive {
                     pauseTimer()
                 } else {
+                    if (prev_interval_hours != interval_hours || prev_interval_minutes != interval_minutes || prev_interval_seconds != interval_seconds) {
+                        save_countdown()
+                        cur_countdown_time = countdown_time
+                        prev_interval_hours = interval_hours
+                        prev_interval_minutes = interval_minutes
+                        prev_interval_seconds = interval_seconds
+                    }
                     startTimer()
                 }
             }
@@ -172,6 +189,14 @@ struct MeditationHelperApp: View {
             } else {
                 elapsed_seconds += 1;
             }
+            
+            cur_countdown_time -= 1
+            if cur_countdown_time == 0 {
+                speakElapsedTime()
+                cur_countdown_time = countdown_time
+            }
+            print(cur_countdown_time)
+            
         }
     }
 
@@ -183,17 +208,27 @@ struct MeditationHelperApp: View {
     }
 
     func resetTimer() {
+        pauseTimer()
         elapsed_hours = 0
         elapsed_minutes = 0
         elapsed_seconds = 0
-        resetButtonDisabled = true
+        cur_countdown_time = countdown_time
+    }
+    
+    func save_countdown() {
+        countdown_time = interval_hours * 3600 + interval_minutes * 60 + interval_seconds
+//        print("Countdown time: \(countdown_time)")
     }
 
 
     // Speech Logic
     func speakElapsedTime() {
         let systemTime = DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .medium)
-        let speech = "Time elapsed: \(elapsed_hours):\(elapsed_minutes):\(elapsed_seconds). Current time: \(systemTime)."
+        var speech = "Time elapsed: "
+        speech += (elapsed_hours == 0) ? "" : "\(elapsed_hours) hours"
+        speech += (elapsed_minutes == 0) ? "" : "\(elapsed_minutes) minutes"
+        speech += (elapsed_seconds == 0) ? "" : "\(elapsed_seconds) seconds"
+        speech += ". Current time: \(systemTime)"
 
         let utterance = AVSpeechUtterance(string: speech)
         utterance.voice = aronVoice
