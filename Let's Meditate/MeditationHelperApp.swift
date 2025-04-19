@@ -29,6 +29,8 @@ struct MeditationHelperApp: View {
     @State private var timerActive = false
     @State private var timer: Timer? = nil
     @State private var resetButtonDisabled = true
+    @State private var activity: NSObjectProtocol?
+    
 //    @State private var timerActive: Bool = false
     @FocusState private var focusedField: FocusField?
 
@@ -178,6 +180,7 @@ struct MeditationHelperApp: View {
 
     // Timer Logic
     func startTimer() {
+        preventSleep()
         timerActive = true
         resetButtonDisabled = true
         saveInterval()
@@ -207,6 +210,7 @@ struct MeditationHelperApp: View {
     }
 
     func pauseTimer() {
+        allowSleep()
         timer?.invalidate()
         timer = nil
         timerActive = false
@@ -266,6 +270,19 @@ struct MeditationHelperApp: View {
             window.setFrame(NSRect(x: 100, y: 100, width: 300, height: 300), display: true)
         }
         
+    }
+    
+    private func preventSleep() {
+        if activity == nil {
+            activity = ProcessInfo.processInfo.beginActivity(options: [.userInitiated, .idleSystemSleepDisabled], reason: "Prevent sleep while the app is active")
+        }
+    }
+    
+    private func allowSleep() {
+        if let activity = activity {
+            ProcessInfo.processInfo.endActivity(activity)
+            self.activity = nil
+        }
     }
 }
 

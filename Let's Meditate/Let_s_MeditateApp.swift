@@ -14,4 +14,5 @@ struct Let_s_MeditateApp: App {
             MeditationHelperApp()
         }
     }
+
 }
